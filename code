@@ -1,0 +1,272 @@
+#include "SFML/Graphics.hpp"
+#include <iostream>
+#include <ctime>
+#include<vector> //don't forget the library!
+using namespace std;
+
+class Ball {
+private:
+	int r;
+	int g;
+	int b;
+	double xPos;
+	double yPos;
+	double xVel;
+	double yVel;
+public:
+	Ball(int red, int green, int blue, double x, double y);
+	void setPosition(double x, double y);
+	void setX(double x);
+	void setY(double y);
+	void setXVel(double vel);
+	void setYVel(double vel);
+	void draw();
+	double getXVel();
+	double getYVel();
+	double getX();
+	double getY();
+};
+
+class Paddle {
+private:
+	int r;
+	int g;
+	int b;
+	double xPos;
+	double yPos;
+	double xVel;
+	double yVel;
+public:
+	Paddle(int red, int green, int blue, double x, double y);
+	void setPosition(double x, double y);
+	void setX(double x);
+	void setY(double y);
+	void draw();
+	double getXVel();
+	double getYVel();
+	double getX();
+	double getY();
+};
+
+class Brick {
+private:
+	int width;
+	int height;
+	int xPos;
+	int yPos;
+	bool Dead;
+	int r, g, b;
+public:
+	Brick(int x, int y);
+	void draw();
+	bool isDead();
+	void killBrick();
+	bool collision(int x1, int y1);
+};
+
+int stage = 0;
+
+const char* scores[32] = { "0", "100", "200", "300", "400", "500", "600", "700", "800", "900",
+"1000", "1100", "1200", "1300", "1400", "1500", "1600", "1700", "1800", "1900", "2000", "2100",
+"2200", "2300", "2400", "2500", "2600", "2700", "2800", "2900", "3000", "MAX: 3000" };
+
+bool collision(int x1, int y1, int x2, int y2);
+
+sf::RenderWindow renderWindow(sf::VideoMode(800, 800), "Breakout"); //set up screen
+
+int main() {
+	vector<Brick*> mapthing;
+	vector<Brick*>::iterator iter;
+
+	for (int j = 0; j < 4; j++)
+		for (int i = 0; i < (800 / 30); i++) {
+			Brick* b1 = new Brick(10 + i * 105, j * 35 + 10);
+			mapthing.push_back(b1);
+		}
+
+	srand(time(NULL));
+
+	sf::Event event; //set up event queue
+	sf::Clock clock; //set up the clock (needed for game timing)
+
+	const float FPS = 60.0f; //FPS
+
+	renderWindow.setFramerateLimit(FPS); //set FPS
+
+	Ball PongBall(0, 255, 255, 250, 250);
+	Paddle paddle1(255, 255, 255, 200, 800 - 30);
+
+	int score = 0;
+
+	bool key[6] = { false, false, false, false };
+	bool redraw = true;
+
+	double xpos = PongBall.getX();
+	double ypos = PongBall.getY();
+	double vx = PongBall.getXVel();
+	double vy = PongBall.getYVel();
+
+	while (renderWindow.isOpen()) {
+		while (renderWindow.pollEvent(event)) { 
+			if (event.type == sf::Event::EventType::Closed)
+				renderWindow.close();
+		}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+			if (paddle1.getX() != 0) {
+				paddle1.setX(paddle1.getX() - 5.0);
+			}
+		}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+			if (paddle1.getX() + 100 != 800) {
+				paddle1.setX(paddle1.getX() + 5.0);
+			}
+		}
+		if (xpos < 0) {
+			vx *= -1;
+		}
+		if (xpos + 30 > 800) {
+			vx *= -1;
+		}
+		if (ypos <= 0)
+			vy *= -1;
+		if (ypos + 30 >= 800)
+			vy *= -1;
+		if (collision(xpos, ypos, paddle1.getX(), paddle1.getY())) {
+			vy *= -1;
+		}
+		for (iter = mapthing.begin(); iter != mapthing.end(); ++iter) {
+			if ((*iter)->collision(xpos, ypos)) {
+				(*iter)->killBrick(); vy *= -1; score += 100;
+			}
+		}
+
+		xpos += vx;
+		ypos += vy;
+
+		PongBall.setYVel(vy);
+		PongBall.setXVel(vx);
+		PongBall.setY(ypos);
+		PongBall.setX(xpos);
+
+		renderWindow.clear();
+		paddle1.draw();
+		scores[score / 100]; scores[31];
+		PongBall.draw();
+
+		for (iter = mapthing.begin(); iter != mapthing.end(); ++iter) {
+			(*iter)->draw();
+		}
+		renderWindow.display();
+	}
+}
+bool collision(int x1, int y1, int x2, int y2) {
+	if ((x1 + 30 > x2) && (x1 < x2 + 100) && (y1 + 30 > y2) && (y1 < y2 + 20))
+		return true;
+	else
+		return false;
+}
+//constructor
+Ball::Ball(int red, int green, int blue, double x, double y) {
+	setPosition(x, y);
+	setXVel(4);
+	setYVel(4);
+}
+void Ball::setPosition(double x, double y) {
+	xPos = x;
+	yPos = y;
+}
+void Ball::draw() {
+	sf::RectangleShape a;
+	a.setPosition(sf::Vector2f(xPos, yPos));
+	a.setSize(sf::Vector2f(30, 30));
+	renderWindow.draw(a);
+}
+double Ball::getX() {
+	return xPos;
+}
+double Ball::getY() {
+	return yPos;
+}
+double Ball::getXVel() {
+	return xVel;
+}
+double Ball::getYVel() {
+	return yVel;
+}
+void Ball::setX(double x) {
+	xPos = x;
+}
+void Ball::setY(double y) {
+	yPos = y;
+}
+void Ball::setXVel(double vel) {
+	xVel = vel;
+}
+void Ball::setYVel(double vel) {
+	yVel = vel;
+}
+Brick::Brick(int x, int y) {
+	xPos = x;
+	yPos = y;
+	height = 30;
+	width = 100;
+	Dead = 0;
+	r = rand() % 256;
+	g = rand() % 256;
+	b = rand() % 256;
+}
+void Brick::draw() {
+	sf::RectangleShape a;
+	a.setPosition(sf::Vector2f(xPos, yPos));
+	a.setSize(sf::Vector2f(width, height));
+	if (!Dead)
+		renderWindow.draw(a);
+}
+bool Brick::isDead() {
+	return Dead;
+}
+void Brick::killBrick() {
+	Dead = 1;
+}
+bool Brick::collision(int x1, int y1) {
+	if (!Dead) {
+		if ((x1 + 30 > xPos) && (x1 < xPos + width) && (y1 + 30 > yPos) && (y1 < yPos + height))
+			return true;
+		else
+			return false;
+	}
+	else
+		return false;
+};
+//constructor
+Paddle::Paddle(int red, int green, int blue, double x, double y) {
+	setPosition(x, y);
+}
+void Paddle::setPosition(double x, double y) {
+	xPos = x;
+	yPos = y;
+}
+void Paddle::draw() {
+	sf::RectangleShape a;
+	a.setPosition(sf::Vector2f(xPos, yPos));
+	a.setSize(sf::Vector2f(100, 20));
+	renderWindow.draw(a);
+}
+double Paddle::getX() {
+	return xPos;
+}
+double Paddle::getY() {
+	return yPos;
+}
+double Paddle::getXVel() {
+	return xVel;
+}
+double Paddle::getYVel() {
+	return yVel;
+}
+void Paddle::setX(double x) {
+	xPos = x;
+}
+void Paddle::setY(double y) {
+	yPos = y;
+}
